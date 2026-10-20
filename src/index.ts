@@ -124,7 +124,8 @@ EXAMPLES:
 
   # Expose on the LAN (requires a token and an explicit host allowlist)
   JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=secret \\
-    ALLOWED_HOSTS=mcp.internal node dist/index.js --http
+    ALLOWED_HOSTS=mcp.internal ALLOWED_ORIGINS=https://mcp.internal \\
+    node dist/index.js --http
 
 AVAILABLE TOOLS:
   jules_create_session    Create a new coding session

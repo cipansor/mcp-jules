@@ -146,7 +146,8 @@ JULES_API_KEY=your-key PORT=8080 node dist/index.js --http
 
 # Expose on a trusted LAN (token + explicit host allowlist required)
 JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=your-token \
-  ALLOWED_HOSTS=mcp.internal node dist/index.js --http
+  ALLOWED_HOSTS=mcp.internal ALLOWED_ORIGINS=https://mcp.internal \
+  node dist/index.js --http
 
 # Show help
 node dist/index.js --help
