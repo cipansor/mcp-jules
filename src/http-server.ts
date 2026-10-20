@@ -258,7 +258,7 @@ export async function runHTTP(server: McpServer): Promise<void> {
   });
 
   app.get("/health", (_, res) => {
-    res.json({ status: "ok", server: "mcp-jules", version: "1.0.0" });
+    res.json({ status: "ok", server: "mcp-jules", version: "0.1.1" });
   });
 
   registerMcpRoute(app, server, config);
