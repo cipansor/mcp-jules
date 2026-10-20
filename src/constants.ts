@@ -19,6 +19,10 @@ export const HTTP_ALLOW_INSECURE_ENV_VAR = "ALLOW_INSECURE_HTTP";
 // Hostnames accepted in the Host header when the server listens on loopback.
 export const LOOPBACK_HOSTNAMES = ["localhost", "127.0.0.1", "[::1]"];
 
+// Bind addresses that restrict the listener to the local machine. `::1` is the
+// IPv6 bind form; `[::1]` is its representation in an HTTP Host header.
+export const LOOPBACK_BIND_ADDRESSES = ["localhost", "127.0.0.1", "::1"];
+
 // Pagination Defaults
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;

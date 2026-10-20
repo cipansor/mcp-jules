@@ -30,6 +30,14 @@ and this project follows [Semantic Versioning](https://semver.org/).
   request on Node 18, where the MCP SDK's use of the `crypto` global is
   unavailable. A `node:crypto` WebCrypto fallback is now installed when the
   global is missing, so the supported Node 18 runtime works.
+- `PORT` values such as `3000oops` or `1.5` were silently truncated by
+  `parseInt` and bound an unintended port; they are now rejected.
+- `HOST=::1` (the IPv6 loopback bind form) was treated as a remote bind,
+  requiring a token and producing the invalid origin `http://::1:3000`. IPv6
+  bind addresses are now recognized as loopback and bracketed in origins.
+- On a tokenless loopback bind, `ALLOWED_HOSTS` accepted hostnames that
+  resolve elsewhere, which reintroduced DNS rebinding. Such hostnames are now
+  rejected unless `MCP_AUTH_TOKEN` is set.
 
 ### Changed
 

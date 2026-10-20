@@ -90,8 +90,16 @@ JULES_API_KEY=your-key \
   node dist/index.js --http
 ```
 
+`ALLOWED_ORIGINS` must include the origin each browser client sends. If your
+clients run on `https://app.example.com`, add it to the comma-separated list;
+requests from origins that are not listed receive `403`.
+
 If you deploy behind a reverse proxy, terminate TLS at the proxy and keep
 `ALLOWED_ORIGINS` restricted to the exact origins of your MCP clients.
+
+Do not set `ALLOWED_HOSTS` to a name that resolves elsewhere while binding
+loopback without a token: a tokenless listener only accepts hostnames that
+resolve to the local machine.
 
 See [GHSA-rgh8-8cv7-4rj9](https://github.com/cipansor/mcp-jules/security/advisories/GHSA-rgh8-8cv7-4rj9)
 for the advisory that prompted these controls.

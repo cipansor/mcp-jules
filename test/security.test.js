@@ -97,6 +97,74 @@ describe("resolveHttpSecurityConfig", () => {
   it("rejects an invalid port", () => {
     assert.throws(() => resolveHttpSecurityConfig({ PORT: "not-a-port" }));
     assert.throws(() => resolveHttpSecurityConfig({ PORT: "70000" }));
+    assert.throws(() => resolveHttpSecurityConfig({ PORT: "3000oops" }));
+    assert.throws(() => resolveHttpSecurityConfig({ PORT: "1.5" }));
+    assert.throws(() => resolveHttpSecurityConfig({ PORT: "0" }));
+    assert.throws(() => resolveHttpSecurityConfig({ PORT: "-1" }));
+  });
+
+  it("falls back to the default port when PORT is unset or blank", () => {
+    assert.equal(resolveHttpSecurityConfig({}).port, 3000);
+    assert.equal(resolveHttpSecurityConfig({ PORT: "" }).port, 3000);
+    assert.equal(resolveHttpSecurityConfig({ PORT: " " }).port, 3000);
+  });
+
+  it("treats the IPv6 loopback bind address as local", () => {
+    const config = resolveHttpSecurityConfig({ HOST: "::1" });
+
+    assert.equal(config.host, "::1");
+    assert.deepEqual(config.allowedHostnames, [
+      "localhost",
+      "127.0.0.1",
+      "[::1]",
+    ]);
+    assert.ok(config.allowedOrigins.includes("http://[::1]:3000"));
+  });
+
+  it("brackets IPv6 bind addresses when building the default origin", () => {
+    const config = resolveHttpSecurityConfig({
+      HOST: "2001:db8::1",
+      MCP_AUTH_TOKEN: "x",
+    });
+
+    assert.ok(config.allowedOrigins.includes("http://[2001:db8::1]:3000"));
+    assert.ok(
+      !config.allowedOrigins.some((origin) => origin.includes("::1:3000"))
+    );
+  });
+
+  it("refuses a non-local allowlisted hostname on a tokenless loopback bind", () => {
+    assert.throws(
+      () => resolveHttpSecurityConfig({ ALLOWED_HOSTS: "mcp.internal" }),
+      /Refusing to allow non-local hostnames/
+    );
+    assert.throws(
+      () => resolveHttpSecurityConfig({ ALLOWED_HOSTS: "10.0.0.5" }),
+      /Refusing to allow non-local hostnames/
+    );
+  });
+
+  it("allows local allowlisted hostnames on a tokenless loopback bind", () => {
+    const config = resolveHttpSecurityConfig({
+      ALLOWED_HOSTS: "localhost,127.0.0.2,[::1],::1",
+    });
+
+    assert.deepEqual(config.allowedHostnames, [
+      "localhost",
+      "127.0.0.2",
+      "[::1]",
+      "::1",
+    ]);
+  });
+
+  it("allows a non-local allowlisted hostname when a token is set", () => {
+    const config = resolveHttpSecurityConfig({
+      ALLOWED_HOSTS: "mcp.internal",
+      MCP_AUTH_TOKEN: "x",
+    });
+
+    assert.deepEqual(config.allowedHostnames, ["mcp.internal"]);
+    assert.equal(config.authToken, "x");
   });
 });
 

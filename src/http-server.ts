@@ -24,6 +24,7 @@ import {
   HTTP_AUTH_TOKEN_ENV_VAR,
   HTTP_HOST_ENV_VAR,
   HTTP_PORT_ENV_VAR,
+  LOOPBACK_BIND_ADDRESSES,
   LOOPBACK_HOSTNAMES,
 } from "./constants.js";
 
@@ -59,8 +60,29 @@ function parseList(value: string | undefined): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-function isLoopbackHost(host: string): boolean {
-  return LOOPBACK_HOSTNAMES.includes(host);
+function isLoopbackBindAddress(host: string): boolean {
+  return LOOPBACK_BIND_ADDRESSES.includes(host);
+}
+
+/** Format a host for use in a URL authority, bracketing IPv6 literals. */
+function formatAuthority(host: string): string {
+  if (host.includes(":") && !host.startsWith("[")) {
+    return `[${host}]`;
+  }
+  return host;
+}
+
+/**
+ * A tokenless loopback listener still trusts the Host header, so every
+ * allowlisted hostname must resolve to this machine. Anything else would let a
+ * DNS-rebinding attacker reach the unauthenticated MCP endpoint.
+ */
+function isLocalHostname(hostname: string): boolean {
+  const bare = hostname.startsWith("[") ? hostname.slice(1, -1) : hostname;
+  if (LOOPBACK_HOSTNAMES.includes(hostname) || bare === "::1") {
+    return true;
+  }
+  return /^127(?:\.\d{1,3}){3}$/.test(bare);
 }
 
 /**
@@ -72,14 +94,21 @@ export function resolveHttpSecurityConfig(
 ): HttpSecurityConfig {
   const host = env[HTTP_HOST_ENV_VAR]?.trim() || DEFAULT_HTTP_HOST;
 
-  const port = parseInt(
-    env[HTTP_PORT_ENV_VAR] || String(DEFAULT_HTTP_PORT),
-    10
-  );
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  const rawPort = env[HTTP_PORT_ENV_VAR]?.trim();
+  const invalidPort = () => {
     throw new Error(
       `${HTTP_PORT_ENV_VAR} must be an integer between 1 and 65535.`
     );
+  };
+  if (rawPort !== undefined && rawPort !== "" && !/^\d+$/.test(rawPort)) {
+    invalidPort();
+  }
+  const port =
+    rawPort === undefined || rawPort === ""
+      ? DEFAULT_HTTP_PORT
+      : Number(rawPort);
+  if (port < 1 || port > 65535) {
+    invalidPort();
   }
 
   const authToken = env[HTTP_AUTH_TOKEN_ENV_VAR]?.trim() || undefined;
@@ -91,7 +120,7 @@ export function resolveHttpSecurityConfig(
   let allowedHostnames: string[];
   if (configuredHostnames.length > 0) {
     allowedHostnames = configuredHostnames;
-  } else if (isLoopbackHost(host)) {
+  } else if (isLoopbackBindAddress(host)) {
     allowedHostnames = [...LOOPBACK_HOSTNAMES];
   } else if (WILDCARD_HOSTS.includes(host)) {
     // A wildcard bind accepts any Host header, so an explicit list is required.
@@ -107,12 +136,12 @@ export function resolveHttpSecurityConfig(
           `http://localhost:${port}`,
           `http://127.0.0.1:${port}`,
           `http://[::1]:${port}`,
-          ...(WILDCARD_HOSTS.includes(host) || isLoopbackHost(host)
+          ...(WILDCARD_HOSTS.includes(host) || isLoopbackBindAddress(host)
             ? []
-            : [`http://${host}:${port}`]),
+            : [`http://${formatAuthority(host)}:${port}`]),
         ];
 
-  if (!isLoopbackHost(host)) {
+  if (!isLoopbackBindAddress(host)) {
     const missing: string[] = [];
     if (!authToken) {
       missing.push(
@@ -133,6 +162,19 @@ export function resolveHttpSecurityConfig(
         throw new Error(message);
       }
       console.error(`Warning: ${message}`);
+    }
+  } else if (!authToken) {
+    // A loopback bind without a token is only safe if every allowed hostname
+    // resolves to this machine; otherwise DNS rebinding reaches the endpoint.
+    const foreign = allowedHostnames.filter(
+      (hostname) => !isLocalHostname(hostname)
+    );
+    if (foreign.length > 0) {
+      throw new Error(
+        `Refusing to allow non-local hostnames (${foreign.join(", ")}) on an ` +
+          `unauthenticated loopback listener: set ${HTTP_AUTH_TOKEN_ENV_VAR}, ` +
+          `or bind ${HTTP_HOST_ENV_VAR} to the interface those hostnames resolve to.`
+      );
     }
   }
 
