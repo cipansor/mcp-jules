@@ -78,8 +78,9 @@ function formatAuthority(host: string): string {
  * DNS-rebinding attacker reach the unauthenticated MCP endpoint.
  */
 function isLocalHostname(hostname: string): boolean {
-  const bare = hostname.startsWith("[") ? hostname.slice(1, -1) : hostname;
-  if (LOOPBACK_HOSTNAMES.includes(hostname) || bare === "::1") {
+  const lower = hostname.toLowerCase();
+  const bare = lower.startsWith("[") ? lower.slice(1, -1) : lower;
+  if (LOOPBACK_HOSTNAMES.includes(lower) || bare === "::1") {
     return true;
   }
   return /^127(?:\.\d{1,3}){3}$/.test(bare);

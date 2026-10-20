@@ -146,7 +146,7 @@ describe("resolveHttpSecurityConfig", () => {
 
   it("allows local allowlisted hostnames on a tokenless loopback bind", () => {
     const config = resolveHttpSecurityConfig({
-      ALLOWED_HOSTS: "localhost,127.0.0.2,[::1],::1",
+      ALLOWED_HOSTS: "localhost,127.0.0.2,[::1],::1,LOCALHOST",
     });
 
     assert.deepEqual(config.allowedHostnames, [
@@ -154,6 +154,7 @@ describe("resolveHttpSecurityConfig", () => {
       "127.0.0.2",
       "[::1]",
       "::1",
+      "LOCALHOST",
     ]);
   });
 
