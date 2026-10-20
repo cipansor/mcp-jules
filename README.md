@@ -27,6 +27,7 @@ The Jules MCP Server acts as a bridge between MCP-compatible clients and the Jul
 - **Activity Monitoring**: Track progress through session activities
 - **Source Management**: List and inspect connected GitHub repositories
 - **Dual Transport**: Supports both stdio and HTTP transports
+- **Hardened HTTP Transport**: Loopback-by-default bind, Host/Origin validation (DNS-rebinding protection), and optional bearer-token authentication
 
 ## Prerequisites
 
@@ -64,6 +65,45 @@ export JULES_API_KEY="your-api-key-here"
 - **Least Privilege**: The Jules API key provides full access to your Jules sessions and connected repositories. Keep it secure and rotate it if you suspect it has been compromised.
 - **CI/CD**: When using in CI/CD environments (like GitHub Actions), use Secrets to store and inject the API key.
 
+### HTTP transport hardening
+
+The HTTP transport can drive mutating Jules tools with your API key, so it is locked down by default:
+
+- **Loopback by default**: the server binds `127.0.0.1`. It refuses to bind a
+  non-loopback address unless `MCP_AUTH_TOKEN` is set and `ALLOWED_HOSTS` lists
+  the hostnames clients will use. `ALLOW_INSECURE_HTTP=true` overrides this
+  refusal and is not recommended.
+- **DNS-rebinding protection**: the `Host` header is validated against the
+  allowed hostnames, and the MCP transport rejects requests from origins
+  outside `ALLOWED_ORIGINS`.
+- **Optional authentication**: set `MCP_AUTH_TOKEN` to require
+  `Authorization: Bearer <token>` on `/mcp`. `/health` stays unauthenticated.
+
+For example, to expose the server on a trusted LAN:
+
+```bash
+JULES_API_KEY=your-key \
+  HOST=0.0.0.0 \
+  MCP_AUTH_TOKEN=a-long-random-token \
+  ALLOWED_HOSTS=mcp.internal \
+  ALLOWED_ORIGINS=https://mcp.internal \
+  node dist/index.js --http
+```
+
+`ALLOWED_ORIGINS` must include the origin each browser client sends. If your
+clients run on `https://app.example.com`, add it to the comma-separated list;
+requests from origins that are not listed receive `403`.
+
+If you deploy behind a reverse proxy, terminate TLS at the proxy and keep
+`ALLOWED_ORIGINS` restricted to the exact origins of your MCP clients.
+
+Do not set `ALLOWED_HOSTS` to a name that resolves elsewhere while binding
+loopback without a token: a tokenless listener only accepts hostnames that
+resolve to the local machine.
+
+See [GHSA-rgh8-8cv7-4rj9](https://github.com/cipansor/mcp-jules/security/advisories/GHSA-rgh8-8cv7-4rj9)
+for the advisory that prompted these controls.
+
 ## Usage
 
 ### With Claude Desktop (stdio transport)
@@ -98,15 +138,23 @@ claude mcp add jules --env JULES_API_KEY=your-api-key-here -- node /path/to/jule
 # Run with stdio transport
 JULES_API_KEY=your-key node dist/index.js
 
-# Run with HTTP transport
+# Run with HTTP transport (binds 127.0.0.1 by default)
 JULES_API_KEY=your-key node dist/index.js --http
 
 # Custom port for HTTP
 JULES_API_KEY=your-key PORT=8080 node dist/index.js --http
 
+# Expose on a trusted LAN (token + explicit host allowlist required)
+JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=your-token \
+  ALLOWED_HOSTS=mcp.internal ALLOWED_ORIGINS=https://mcp.internal \
+  node dist/index.js --http
+
 # Show help
 node dist/index.js --help
 ```
+
+See [HTTP transport hardening](#http-transport-hardening) for the full list of
+security-related environment variables.
 
 ## Tool Reference
 
@@ -340,6 +388,9 @@ npm run lint
 
 # Check formatting
 npm run format:check
+
+# Run the test suite
+npm test
 
 # Development mode (watch)
 npm run dev
