@@ -1,7 +1,7 @@
-# Jules MCP Server
+# mcp-jules
 
 [![Status](https://img.shields.io/badge/status-GitHub%20Actions-2088FF?style=flat-square)](.github/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-0.1.1-0ea5e9?style=flat-square)](package.json)
+[![npm](https://img.shields.io/npm/v/mcp-jules?style=flat-square)](https://www.npmjs.com/package/mcp-jules)
 
 MCP (Model Context Protocol) server for [Google Jules](https://jules.google) - the AI coding agent. This server enables LLMs like Claude to interact with Jules API, creating and managing coding sessions programmatically.
 
@@ -38,13 +38,17 @@ The Jules MCP Server acts as a bridge between MCP-compatible clients and the Jul
 ## Installation
 
 ```bash
-# Clone or download the server
-cd jules-mcp-server
+npm install -g mcp-jules
+# or run it without installing:
+npx -y mcp-jules --help
+```
 
-# Install dependencies
+### From source
+
+```bash
+git clone https://github.com/cipansor/mcp-jules
+cd mcp-jules
 npm install
-
-# Build the TypeScript
 npm run build
 ```
 
@@ -87,7 +91,7 @@ JULES_API_KEY=your-key \
   MCP_AUTH_TOKEN=a-long-random-token \
   ALLOWED_HOSTS=mcp.internal \
   ALLOWED_ORIGINS=https://mcp.internal \
-  node dist/index.js --http
+  npx mcp-jules --http
 ```
 
 `ALLOWED_ORIGINS` must include the origin each browser client sends. If your
@@ -114,8 +118,8 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "jules": {
-      "command": "node",
-      "args": ["/path/to/jules-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "mcp-jules"],
       "env": {
         "JULES_API_KEY": "your-api-key-here"
       }
@@ -129,28 +133,28 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 You can add this server to [Claude Code](https://claude.ai/code) by running:
 
 ```bash
-claude mcp add jules --env JULES_API_KEY=your-api-key-here -- node /path/to/jules-mcp-server/dist/index.js
+claude mcp add jules --env JULES_API_KEY=your-api-key-here -- npx -y mcp-jules
 ```
 
 ### Command Line
 
 ```bash
 # Run with stdio transport
-JULES_API_KEY=your-key node dist/index.js
+JULES_API_KEY=your-key npx mcp-jules
 
 # Run with HTTP transport (binds 127.0.0.1 by default)
-JULES_API_KEY=your-key node dist/index.js --http
+JULES_API_KEY=your-key npx mcp-jules --http
 
 # Custom port for HTTP
-JULES_API_KEY=your-key PORT=8080 node dist/index.js --http
+JULES_API_KEY=your-key PORT=8080 npx mcp-jules --http
 
 # Expose on a trusted LAN (token + explicit host allowlist required)
 JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=your-token \
   ALLOWED_HOSTS=mcp.internal ALLOWED_ORIGINS=https://mcp.internal \
-  node dist/index.js --http
+  npx mcp-jules --http
 
 # Show help
-node dist/index.js --help
+npx mcp-jules --help
 ```
 
 See [HTTP transport hardening](#http-transport-hardening) for the full list of

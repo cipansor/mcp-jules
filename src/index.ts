@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Jules MCP Server
  *
@@ -22,7 +23,7 @@ import { runHTTP } from "./http-server.js";
 // ============================================================================
 
 const server = new McpServer({
-  name: "jules-mcp-server",
+  name: "mcp-jules",
   version: "1.0.0",
 });
 
@@ -91,7 +92,7 @@ function printHelp(): void {
 Jules MCP Server - Google Jules AI Coding Agent API
 
 USAGE:
-  node dist/index.js [OPTIONS]
+  npx mcp-jules [OPTIONS]
 
 OPTIONS:
   --help, -h      Show this help message
@@ -114,18 +115,18 @@ HTTP SECURITY:
 
 EXAMPLES:
   # Run with stdio (for MCP clients like Claude Desktop)
-  JULES_API_KEY=your-key node dist/index.js
+  JULES_API_KEY=your-key npx mcp-jules
 
   # Run with HTTP on loopback (default, protected by Host/Origin checks)
-  JULES_API_KEY=your-key node dist/index.js --http
+  JULES_API_KEY=your-key npx mcp-jules --http
 
   # Run with HTTP on custom port
-  JULES_API_KEY=your-key PORT=8080 node dist/index.js --http
+  JULES_API_KEY=your-key PORT=8080 npx mcp-jules --http
 
   # Expose on the LAN (requires a token and an explicit host allowlist)
   JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=secret \\
     ALLOWED_HOSTS=mcp.internal ALLOWED_ORIGINS=https://mcp.internal \\
-    node dist/index.js --http
+    npx mcp-jules --http
 
 AVAILABLE TOOLS:
   jules_create_session    Create a new coding session

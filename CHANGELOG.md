@@ -7,6 +7,13 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The package is published to npm as `mcp-jules`, and installs a `mcp-jules`
+  command, so it can be run with `npx -y mcp-jules`.
+- The release workflow publishes to npm with provenance, in addition to
+  attaching the tarball to the GitHub release.
+
 ### Added
 
 - Repository maintenance files and GitHub automation scaffolding.
