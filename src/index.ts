@@ -10,13 +10,12 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import express from "express";
 
 import { registerSessionsTools } from "./tools/sessions.js";
 import { registerActivitiesTools } from "./tools/activities.js";
 import { registerSourcesTools } from "./tools/sources.js";
 import { API_KEY_ENV_VAR } from "./constants.js";
+import { runHTTP } from "./http-server.js";
 
 // ============================================================================
 // Server Initialization
@@ -50,10 +49,9 @@ function registerAllTools(): void {
 // ============================================================================
 
 /**
- * Run server with stdio transport (for local/CLI use)
+ * Validate that the Jules API key is present before starting any transport
  */
-async function runStdio(): Promise<void> {
-  // Validate API key exists
+function validateApiKey(): void {
   if (!process.env[API_KEY_ENV_VAR]) {
     console.error(
       `Error: ${API_KEY_ENV_VAR} environment variable is required.`
@@ -61,7 +59,13 @@ async function runStdio(): Promise<void> {
     console.error("Get your API key from https://jules.google.com/settings");
     process.exit(1);
   }
+}
 
+/**
+ * Run server with stdio transport (for local/CLI use)
+ */
+async function runStdio(): Promise<void> {
+  validateApiKey();
   registerAllTools();
 
   const transport = new StdioServerTransport();
@@ -72,42 +76,10 @@ async function runStdio(): Promise<void> {
 /**
  * Run server with HTTP transport (for remote/web use)
  */
-async function runHTTP(): Promise<void> {
-  // Validate API key exists
-  if (!process.env[API_KEY_ENV_VAR]) {
-    console.error(
-      `Error: ${API_KEY_ENV_VAR} environment variable is required.`
-    );
-    console.error("Get your API key from https://jules.google.com/settings");
-    process.exit(1);
-  }
-
+async function runHttpTransport(): Promise<void> {
+  validateApiKey();
   registerAllTools();
-
-  const app = express();
-  app.use(express.json());
-
-  // Health check endpoint
-  app.get("/health", (_, res) => {
-    res.json({ status: "ok", server: "jules-mcp-server", version: "1.0.0" });
-  });
-
-  // MCP endpoint
-  app.post("/mcp", async (req, res) => {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
-    res.on("close", () => transport.close());
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-  });
-
-  const port = parseInt(process.env.PORT || "3000");
-  app.listen(port, () => {
-    console.error(`Jules MCP Server running on http://localhost:${port}/mcp`);
-    console.error(`Health check: http://localhost:${port}/health`);
-  });
+  await runHTTP(server);
 }
 
 // ============================================================================
@@ -128,17 +100,31 @@ OPTIONS:
 ENVIRONMENT:
   JULES_API_KEY   Required. Get from https://jules.google.com/settings
   PORT            HTTP port (default: 3000, only for --http)
+  HOST            HTTP bind address (default: 127.0.0.1, only for --http)
   TRANSPORT       Alternative to --http: set to 'http' for HTTP transport
+
+HTTP SECURITY:
+  MCP_AUTH_TOKEN       Bearer token required on /mcp. Mandatory when HOST is
+                       not a loopback address.
+  ALLOWED_HOSTS        Comma-separated Host header allowlist. Required when
+                       HOST is 0.0.0.0 or ::.
+  ALLOWED_ORIGINS      Comma-separated Origin allowlist (default: localhost).
+  ALLOW_INSECURE_HTTP  Set to 'true' to allow an unauthenticated non-loopback
+                       bind. Not recommended.
 
 EXAMPLES:
   # Run with stdio (for MCP clients like Claude Desktop)
   JULES_API_KEY=your-key node dist/index.js
 
-  # Run with HTTP (for remote access)
+  # Run with HTTP on loopback (default, protected by Host/Origin checks)
   JULES_API_KEY=your-key node dist/index.js --http
 
   # Run with HTTP on custom port
   JULES_API_KEY=your-key PORT=8080 node dist/index.js --http
+
+  # Expose on the LAN (requires a token and an explicit host allowlist)
+  JULES_API_KEY=your-key HOST=0.0.0.0 MCP_AUTH_TOKEN=secret \\
+    ALLOWED_HOSTS=mcp.internal node dist/index.js --http
 
 AVAILABLE TOOLS:
   jules_create_session    Create a new coding session
@@ -170,7 +156,7 @@ if (args.includes("--help") || args.includes("-h")) {
 const useHttp = args.includes("--http") || process.env.TRANSPORT === "http";
 
 if (useHttp) {
-  runHTTP().catch((error) => {
+  runHttpTransport().catch((error) => {
     console.error("Server error:", error);
     process.exit(1);
   });

@@ -20,6 +20,7 @@
     "lint": "eslint . --ext .ts,.js",
     "lint:fix": "eslint . --ext .ts,.js --fix",
     "start": "node dist/index.js",
+    "test": "npm run build && node --test",
     "dev": "tsc --watch"
   },
   "engines": {

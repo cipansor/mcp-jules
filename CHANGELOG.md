@@ -10,6 +10,23 @@ and this project follows [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Repository maintenance files and GitHub automation scaffolding.
+- Security regression tests for the HTTP transport, run with `npm test`.
+- HTTP transport environment variables: `HOST`, `MCP_AUTH_TOKEN`,
+  `ALLOWED_HOSTS`, `ALLOWED_ORIGINS`, and `ALLOW_INSECURE_HTTP`.
+
+### Security
+
+- Fix GHSA-rgh8-8cv7-4rj9: the HTTP transport is no longer an unauthenticated
+  endpoint bound to all interfaces.
+  - Binds `127.0.0.1` by default and refuses a non-loopback bind unless
+    `MCP_AUTH_TOKEN` is set and `ALLOWED_HOSTS` lists the permitted hostnames.
+  - Validates the `Host` header and rejects requests whose `Origin` is not
+    allowed, enabling DNS-rebinding protection on the MCP transport.
+  - Supports optional bearer-token authentication on `/mcp`.
+
+### Changed
+
+- HTTP transport setup moved from `src/index.ts` to `src/http-server.ts`.
 
 ## [0.1.0] - 2026-05-07
 
