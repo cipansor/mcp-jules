@@ -27,6 +27,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - HTTP transport setup moved from `src/index.ts` to `src/http-server.ts`.
+- Pinned GitHub Actions to full commit SHAs to satisfy the repository's
+  action-pinning policy (CI failed on every PR without this).
 
 ## [0.1.0] - 2026-05-07
 
