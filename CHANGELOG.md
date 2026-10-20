@@ -24,6 +24,13 @@ and this project follows [Semantic Versioning](https://semver.org/).
     allowed, enabling DNS-rebinding protection on the MCP transport.
   - Supports optional bearer-token authentication on `/mcp`.
 
+### Fixed
+
+- HTTP transport returned `400 Parse error: crypto is not defined` for every
+  request on Node 18, where the MCP SDK's use of the `crypto` global is
+  unavailable. A `node:crypto` WebCrypto fallback is now installed when the
+  global is missing, so the supported Node 18 runtime works.
+
 ### Changed
 
 - HTTP transport setup moved from `src/index.ts` to `src/http-server.ts`.

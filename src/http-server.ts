@@ -9,7 +9,7 @@
  * - supports optional bearer-token authentication on /mcp.
  */
 
-import { timingSafeEqual } from "node:crypto";
+import { timingSafeEqual, webcrypto } from "node:crypto";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -26,6 +26,16 @@ import {
   HTTP_PORT_ENV_VAR,
   LOOPBACK_HOSTNAMES,
 } from "./constants.js";
+
+// The MCP SDK calls the `crypto` global (Node 20+), but package.json supports
+// Node 18, where WebCrypto only exists on `node:crypto`. Without this, every
+// /mcp request fails with "crypto is not defined" on Node 18.
+if (!globalThis.crypto) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: webcrypto,
+    configurable: true,
+  });
+}
 
 const WILDCARD_HOSTS = ["0.0.0.0", "::"];
 
