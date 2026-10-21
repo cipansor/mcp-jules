@@ -7,6 +7,27 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-20
+
+### Changed
+
+- The package is published to npm as `mcp-jules`, and installs a `mcp-jules`
+  command, so it can be run with `npx -y mcp-jules`.
+- The release workflow publishes to npm with provenance, in addition to
+  attaching the tarball to the GitHub release.
+- The server version is read from `package.json` at runtime instead of being
+  duplicated as a literal, so the npm manifest, the MCP handshake and `/health`
+  cannot report different versions.
+
+### Fixed
+
+- The release workflow no longer overrides the job's `contents: write`
+  permission, which had stopped `action-gh-release` from creating the GitHub
+  release and therefore blocked the npm publish job that depends on it.
+- The release workflow now fails early when the pushed tag does not match the
+  `package.json` version, so npm and GitHub cannot be released under different
+  versions.
+
 ### Added
 
 - Repository maintenance files and GitHub automation scaffolding.

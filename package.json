@@ -1,9 +1,13 @@
 {
-  "name": "jules-mcp-server",
-  "version": "1.0.0",
-  "description": "MCP Server for Google Jules AI Coding Agent API",
+  "name": "mcp-jules",
+  "version": "0.1.2",
+  "description": "MCP server for the Google Jules AI coding agent API",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "bin": {
+    "mcp-jules": "dist/index.js"
+  },
   "files": [
     "dist",
     "README.md",
@@ -32,10 +36,19 @@
     "google",
     "ai",
     "coding",
-    "agent"
+    "agent",
+    "model-context-protocol"
   ],
-  "author": "",
+  "author": "Cipansor",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cipansor/mcp-jules.git"
+  },
+  "homepage": "https://github.com/cipansor/mcp-jules#readme",
+  "bugs": {
+    "url": "https://github.com/cipansor/mcp-jules/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",
     "axios": "^1.20.0",
