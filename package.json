@@ -12,6 +12,7 @@
     "dist",
     "README.md",
     "LICENSE",
+    "NOTICE",
     "CHANGELOG.md"
   ],
   "scripts": {
@@ -39,8 +40,8 @@
     "agent",
     "model-context-protocol"
   ],
-  "author": "Cipansor",
-  "license": "MIT",
+  "author": "Yayasan Pesantren Cipansor",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cipansor/mcp-jules.git"

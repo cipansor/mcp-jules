@@ -7,6 +7,20 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Relicensed from MIT to Apache-2.0, with the copyright held by Yayasan
+  Pesantren Cipansor. Apache-2.0 adds an express patent grant and a trademark
+  clause (section 6) that disclaims any right to use the names of contributors,
+  which suits a project that interoperates with a third party's API.
+- Added a NOTICE file carrying the copyright line and the third-party trademark
+  statement, as Apache-2.0 section 4(d) expects.
+
+### Added
+
+- An "unofficial project" disclaimer in the README and NOTICE: this software is
+  not affiliated with, sponsored by, or endorsed by Google LLC.
+
 ## [0.1.2] - 2026-10-20
 
 ### Changed

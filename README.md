@@ -5,6 +5,11 @@
 
 MCP (Model Context Protocol) server for [Google Jules](https://jules.google) - the AI coding agent. This server enables LLMs like Claude to interact with Jules API, creating and managing coding sessions programmatically.
 
+> **Unofficial project.** This is an independent, community-built client for the
+> Jules API. It is not affiliated with, sponsored by, or endorsed by Google LLC.
+> "Google" and "Jules" are trademarks of Google LLC. The Jules API is an alpha
+> release and its specifications may change without notice.
+
 ## Architecture
 
 The Jules MCP Server acts as a bridge between MCP-compatible clients and the Jules REST API.
@@ -442,4 +447,10 @@ Based on [Jules REST API](https://jules.google/docs/api/reference/):
 
 ## License
 
-MIT
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+Copyright 2026 Yayasan Pesantren Cipansor.
+
+This is an independent project, not affiliated with, sponsored by, or endorsed by
+Google LLC. "Google" and "Jules" are trademarks of Google LLC, used here only to
+describe what this software interoperates with.
