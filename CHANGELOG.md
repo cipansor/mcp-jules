@@ -20,6 +20,15 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 - An "unofficial project" disclaimer in the README and NOTICE: this software is
   not affiliated with, sponsored by, or endorsed by Google LLC.
+- A "Licensing of contributions" section in `CONTRIBUTING.md`, stating that
+  contributions are licensed under Apache-2.0 on submission.
+
+### Fixed
+
+- `package-lock.json` no longer reports the root package as MIT. The lockfile
+  keeps its own copy of the root licence under `packages[""]`, so it disagreed
+  with the manifest after the relicence and license scanners read the stale
+  value. Refreshed with `npm install --package-lock-only`.
 
 ## [0.1.2] - 2026-10-20
 

@@ -449,7 +449,7 @@ Based on [Jules REST API](https://jules.google/docs/api/reference/):
 
 Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-Copyright 2026 Yayasan Pesantren Cipansor.
+Copyright 2026 Yayasan Pesantren Cipansor and the mcp-jules contributors.
 
 This is an independent project, not affiliated with, sponsored by, or endorsed by
 Google LLC. "Google" and "Jules" are trademarks of Google LLC, used here only to
