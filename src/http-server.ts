@@ -27,6 +27,7 @@ import {
   LOOPBACK_BIND_ADDRESSES,
   LOOPBACK_HOSTNAMES,
 } from "./constants.js";
+import { VERSION } from "./version.js";
 
 // The MCP SDK calls the `crypto` global (Node 20+), but package.json supports
 // Node 18, where WebCrypto only exists on `node:crypto`. Without this, every
@@ -258,7 +259,7 @@ export async function runHTTP(server: McpServer): Promise<void> {
   });
 
   app.get("/health", (_, res) => {
-    res.json({ status: "ok", server: "mcp-jules", version: "0.1.1" });
+    res.json({ status: "ok", server: "mcp-jules", version: VERSION });
   });
 
   registerMcpRoute(app, server, config);

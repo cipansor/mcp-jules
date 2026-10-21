@@ -17,6 +17,7 @@ import { registerActivitiesTools } from "./tools/activities.js";
 import { registerSourcesTools } from "./tools/sources.js";
 import { API_KEY_ENV_VAR } from "./constants.js";
 import { runHTTP } from "./http-server.js";
+import { VERSION } from "./version.js";
 
 // ============================================================================
 // Server Initialization
@@ -24,7 +25,7 @@ import { runHTTP } from "./http-server.js";
 
 const server = new McpServer({
   name: "mcp-jules",
-  version: "0.1.1",
+  version: VERSION,
 });
 
 // ============================================================================

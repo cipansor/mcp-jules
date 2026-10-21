@@ -417,6 +417,21 @@ Project hygiene and community documents:
 - [SECURITY.md](SECURITY.md)
 - [LICENSE](LICENSE)
 
+## Releasing
+
+Releases are driven by a git tag. The tag, the `package.json` version and the
+npm version must all agree, so the version is bumped first and the tag is pushed
+at the merge commit:
+
+1.  Bump the version: `npm version <major.minor.patch> --no-git-tag-version`.
+2.  Move the `Unreleased` notes in [CHANGELOG.md](CHANGELOG.md) under the new
+    version and commit.
+3.  Merge to `main`, then tag the merge commit `v<version>` and push the tag.
+
+Pushing a `v*.*.*` tag runs the [release workflow](.github/workflows/release.yml),
+which verifies the tag matches `package.json`, builds, attaches the tarball to a
+GitHub release, and publishes to npm with provenance via Trusted Publishing.
+
 ## API Reference
 
 Based on [Jules REST API](https://jules.google/docs/api/reference/):
