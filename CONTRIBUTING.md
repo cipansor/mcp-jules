@@ -13,7 +13,7 @@ Thanks for helping improve Jules MCP Server.
 
 - Create a topic branch for your change.
 - Keep changes focused and small where possible.
-- Update `README.md`, `CHANGELOG.md`, or related docs when behavior changes.
+- Update `README.md` or related docs when behavior changes.
 - Include tests or validation steps when a change affects runtime behavior.
 
 ## Pull requests

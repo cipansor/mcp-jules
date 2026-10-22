@@ -418,7 +418,6 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for more detail
 
 Project hygiene and community documents:
 
-- [CHANGELOG.md](CHANGELOG.md)
 - [SECURITY.md](SECURITY.md)
 - [LICENSE](LICENSE)
 
@@ -429,13 +428,53 @@ npm version must all agree, so the version is bumped first and the tag is pushed
 at the merge commit:
 
 1.  Bump the version: `npm version <major.minor.patch> --no-git-tag-version`.
-2.  Move the `Unreleased` notes in [CHANGELOG.md](CHANGELOG.md) under the new
-    version and commit.
-3.  Merge to `main`, then tag the merge commit `v<version>` and push the tag.
+2.  Merge to `main`, then tag the merge commit `v<version>` and push the tag.
 
 Pushing a `v*.*.*` tag runs the [release workflow](.github/workflows/release.yml),
 which verifies the tag matches `package.json`, builds, attaches the tarball to a
 GitHub release, and publishes to npm with provenance via Trusted Publishing.
+
+### One-time npm setup
+
+Publishing uses [Trusted Publishing](https://docs.npmjs.com/trusted-publishers),
+so the release workflow authenticates with a short-lived OIDC token and **no
+`NPM_TOKEN` secret is stored in the repository**. Trusted publishing can only be
+attached to a package that already exists in the registry, so the package was
+created once with a staged publish before the first tag-driven release.
+
+**1. Bootstrap the package (already done for `mcp-jules`).** A brand-new package
+is created with [staged publishing](https://docs.npmjs.com/staged-publishing),
+which needs npm CLI >= 11.15.0 and Node >= 22.14.0:
+
+```sh
+npm stage publish --access public   # uploads the tarball to the stage queue
+npm stage list                      # wait for status: staged, then copy the id
+npm stage approve <stage-id>        # needs 2FA
+```
+
+Staging a package that does not exist yet creates a `0.0.0-stage` placeholder so
+the name is reserved and the trusted publisher can be attached; the real version
+goes live only after `npm stage approve`. Staging itself does **not** need 2FA,
+which is why this path works from a token that cannot bypass 2FA - the
+proof-of-presence is deferred to the interactive approve step. A direct
+`npm publish` instead fails with
+`403 ... Two-factor authentication or granular access token with bypass 2fa
+enabled is required to publish packages.`
+
+Bootstrap with a throwaway version (for example `0.0.1`) and leave the release
+you want CI to ship unpublished: a published version cannot be published again,
+so bootstrapping `0.2.0` would make the `v0.2.0` tag fail in the publish job.
+
+**2. Add the trusted publisher.** On npmjs.com, open the `mcp-jules` package,
+then **Settings → Trusted Publisher → GitHub Actions** and enter:
+
+- Organization or user: `cipansor`
+- Repository: `mcp-jules`
+- Workflow filename: `release.yml` (the filename only, not the full path)
+- Environment name: leave blank
+
+The identity fields are exact-match, so a wrong repository or workflow filename
+is the usual cause of an `ENEEDAUTH` or `404` failure in the publish job.
 
 ## API Reference
 

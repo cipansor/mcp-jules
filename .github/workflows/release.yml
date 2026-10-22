@@ -65,18 +65,23 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # Deliberately NO `registry-url` here. When that input is set,
+      # actions/setup-node writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`
+      # into .npmrc. Trusted publishing runs without a NODE_AUTH_TOKEN, so that
+      # line expands to an empty credential and npm tries classic auth instead of
+      # starting the OIDC exchange, failing with ENEEDAUTH or a 404 from the
+      # registry. npm defaults to the public registry, so nothing is lost.
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
 
       # Trusted publishing needs npm CLI >= 11.5.1 and Node >= 22.14.0. That is
       # newer than the npm bundled with some Node releases, and an older npm
       # fails the publish with an authentication error instead of falling back,
       # so pin the floor explicitly rather than relying on the bundled version.
       - name: Ensure npm supports trusted publishing
-        run: npm install -g npm@11
+        run: npm install -g "npm@^11.5.1"
 
       - name: Install dependencies
         run: npm ci
