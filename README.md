@@ -1,7 +1,10 @@
 # mcp-jules
 
-[![Status](https://img.shields.io/badge/status-GitHub%20Actions-2088FF?style=flat-square)](.github/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/mcp-jules?style=flat-square)](https://www.npmjs.com/package/mcp-jules)
+[![CI](https://github.com/cipansor/mcp-jules/actions/workflows/ci.yml/badge.svg)](https://github.com/cipansor/mcp-jules/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/mcp-jules?style=flat-square)](https://www.npmjs.com/package/mcp-jules)
+[![npm downloads](https://img.shields.io/npm/dm/mcp-jules?style=flat-square)](https://www.npmjs.com/package/mcp-jules)
+[![node](https://img.shields.io/node/v/mcp-jules?style=flat-square)](https://www.npmjs.com/package/mcp-jules)
+[![license](https://img.shields.io/npm/l/mcp-jules?style=flat-square)](LICENSE)
 
 MCP (Model Context Protocol) server for [Google Jules](https://jules.google) - the AI coding agent. This server enables LLMs like Claude to interact with Jules API, creating and managing coding sessions programmatically.
 
@@ -9,6 +12,36 @@ MCP (Model Context Protocol) server for [Google Jules](https://jules.google) - t
 > Jules API. It is not affiliated with, sponsored by, or endorsed by Google LLC.
 > "Google" and "Jules" are trademarks of Google LLC. The Jules API is an alpha
 > release and its specifications may change without notice.
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+  - [Environment variables](#environment-variables)
+  - [HTTP security variables](#http-security-variables)
+- [Security](#security)
+  - [HTTP transport hardening](#http-transport-hardening)
+- [Usage](#usage)
+  - [With Claude Desktop (stdio transport)](#with-claude-desktop-stdio-transport)
+  - [With Claude Code (CLI)](#with-claude-code-cli)
+  - [Command Line](#command-line)
+  - [HTTP Endpoints](#http-endpoints)
+- [Tool Reference](#tool-reference)
+  - [Session Tools](#session-tools)
+  - [Activity Tools](#activity-tools)
+  - [Source Tools](#source-tools)
+- [Real-World Examples](#real-world-examples)
+- [Session States](#session-states)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Contributing](#contributing)
+- [Releasing](#releasing)
+- [API Reference](#api-reference)
+- [License](#license)
 
 ## Architecture
 
@@ -42,11 +75,20 @@ The Jules MCP Server acts as a bridge between MCP-compatible clients and the Jul
 
 ## Installation
 
+`mcp-jules` is published on npm as [`mcp-jules`](https://www.npmjs.com/package/mcp-jules)
+and installs a `mcp-jules` command.
+
 ```bash
+# Install globally
 npm install -g mcp-jules
-# or run it without installing:
+
+# Or run it without installing (recommended for MCP clients)
 npx -y mcp-jules --help
 ```
+
+The package requires **Node.js 18 or newer** and declares no post-install
+scripts. `npx -y` is the most common way to run it, because MCP clients start the
+server as a child process.
 
 ### From source
 
@@ -55,15 +97,57 @@ git clone https://github.com/cipansor/mcp-jules
 cd mcp-jules
 npm install
 npm run build
+node dist/index.js --help
 ```
+
+## Quick Start
+
+Three steps from zero to a working server:
+
+1.  **Get an API key.** Create one at
+    [jules.google.com/settings](https://jules.google.com/settings) and make sure
+    at least one GitHub repository is connected to Jules in the Jules web UI.
+2.  **Export the key.** The server refuses to start without it:
+    ```bash
+    export JULES_API_KEY="your-api-key-here"
+    ```
+3.  **Register the server with your MCP client.** For Claude Desktop, add the
+    `mcpServers` entry shown in [Usage](#with-claude-desktop-stdio-transport).
+
+Then ask your client to call `jules_list_sources` - if it returns your
+repositories, the wiring works.
 
 ## Configuration
 
-Set your Jules API key as an environment variable:
+### Environment variables
+
+| Variable        | Required | Default     | Description                                                                  |
+| :-------------- | :------- | :---------- | :--------------------------------------------------------------------------- |
+| `JULES_API_KEY` | Yes      | -           | Jules API key. The server exits with an error when it is missing.            |
+| `TRANSPORT`     | No       | stdio       | Set to `http` to use the HTTP transport instead of stdio (same as `--http`). |
+| `HOST`          | No       | `127.0.0.1` | HTTP bind address. Only used by the HTTP transport.                          |
+| `PORT`          | No       | `3000`      | HTTP port. Only used by the HTTP transport. Invalid values are rejected.     |
+
+Set the key as an environment variable:
 
 ```bash
 export JULES_API_KEY="your-api-key-here"
 ```
+
+The key is sent to the Jules API in the `x-goog-api-key` header and is never
+written to disk by this server.
+
+### HTTP security variables
+
+These apply only to the HTTP transport. See
+[HTTP transport hardening](#http-transport-hardening) for how they interact.
+
+| Variable              | Default          | Description                                                                                     |
+| :-------------------- | :--------------- | :---------------------------------------------------------------------------------------------- |
+| `MCP_AUTH_TOKEN`      | unset            | When set, `/mcp` requires `Authorization: Bearer <token>`. Mandatory for any non-loopback bind. |
+| `ALLOWED_HOSTS`       | unset            | Comma-separated `Host` header allowlist. Required when binding `0.0.0.0` or `::`.               |
+| `ALLOWED_ORIGINS`     | loopback origins | Comma-separated `Origin` allowlist. Requests from unlisted origins get `403`.                   |
+| `ALLOW_INSECURE_HTTP` | unset            | Set to `true` to permit an unauthenticated non-loopback bind. Not recommended.                  |
 
 ## Security
 
@@ -165,9 +249,51 @@ npx mcp-jules --help
 See [HTTP transport hardening](#http-transport-hardening) for the full list of
 security-related environment variables.
 
+### HTTP Endpoints
+
+The HTTP transport exposes exactly two routes:
+
+| Route     | Method | Auth                                    | Description                                                                     |
+| :-------- | :----- | :-------------------------------------- | :------------------------------------------------------------------------------ |
+| `/mcp`    | POST   | Bearer token if `MCP_AUTH_TOKEN` is set | MCP streamable-HTTP endpoint. This is what MCP clients connect to.              |
+| `/health` | GET    | none                                    | Liveness probe. Returns `{"status":"ok","server":"mcp-jules","version":"..."}`. |
+
+The version in `/health` is read from `package.json` at runtime, so it always
+matches the published npm version. `/health` is intentionally unauthenticated so
+a container orchestrator can probe it without a token; it exposes no session data.
+
+```bash
+# Start the HTTP transport
+JULES_API_KEY=your-key npx mcp-jules --http
+
+# Probe liveness
+curl http://127.0.0.1:3000/health
+```
+
 ## Tool Reference
 
-The server provides a suite of tools to interact with Jules. Some tools support a `response_format` parameter (`markdown` or `json`); refer to each tool's documented arguments to see whether it is accepted.
+The server exposes ten tools across three groups. Inputs are validated with a
+strict schema, so an unknown argument is rejected rather than ignored.
+
+| Tool                    | Group      | `response_format` | Paginated |
+| :---------------------- | :--------- | :---------------- | :-------- |
+| `jules_create_session`  | Sessions   | yes               | no        |
+| `jules_list_sessions`   | Sessions   | yes               | yes       |
+| `jules_get_session`     | Sessions   | yes               | no        |
+| `jules_delete_session`  | Sessions   | no                | no        |
+| `jules_send_message`    | Sessions   | no                | no        |
+| `jules_approve_plan`    | Sessions   | no                | no        |
+| `jules_list_activities` | Activities | yes               | yes       |
+| `jules_get_activity`    | Activities | yes               | no        |
+| `jules_list_sources`    | Sources    | yes               | yes       |
+| `jules_get_source`      | Sources    | yes               | no        |
+
+Every tool that accepts `response_format` defaults to `markdown` and also
+accepts `json`. Paginated tools accept `pageSize` (1-100, default 20) and
+`pageToken`, and report whether more results are available. In markdown output,
+`jules_get_activity` truncates long artifact bodies — git patches at 5,000
+characters and bash output at 2,000 characters — appending `... [truncated]`.
+JSON output is never truncated.
 
 ### Session Tools
 
@@ -176,12 +302,12 @@ The server provides a suite of tools to interact with Jules. Some tools support 
 Creates a new coding session where Jules executes a task on a repository.
 
 - **Arguments**:
-  - `prompt` (string, required): Task description.
-  - `sourceContext` (object, required): Repository info (e.g., `{ "source": "sources/github-owner-repo", "githubRepoContext": { "startingBranch": "main" } }`).
-  - `title` (string, optional): Session title.
+  - `prompt` (string, required): Task description. Max 10,000 characters.
+  - `sourceContext` (object, required): Repository info (e.g., `{ "source": "sources/github-owner-repo", "githubRepoContext": { "startingBranch": "main" } }`). `githubRepoContext` is optional.
+  - `title` (string, optional): Session title. Max 200 characters.
   - `requirePlanApproval` (boolean, optional): If Jules should wait for plan approval.
   - `automationMode` (string, optional): Use `AUTO_CREATE_PR` to automatically create a PR on completion.
-  - `response_format` (string, optional): Response format, either `markdown` or `json`.
+  - `response_format` (string, optional): Response format, either `markdown` (default) or `json`.
 
 - **Example Response (Markdown)**:
 
@@ -312,6 +438,10 @@ Gets detailed information about a specific activity. This is how you view code d
   - `activityId` (string, required): The activity ID.
   - `response_format` (string, optional): Controls the format of the returned activity details.
 
+- **Note**: in markdown output, a git patch is truncated to 5,000 characters
+  and bash output to 2,000 characters, each ending with `... [truncated]`. Use
+  `response_format: "json"` to receive the full, untruncated payload.
+
 ### Source Tools
 
 #### `jules_list_sources`
@@ -371,14 +501,23 @@ Gets details about a specific connected repository, including all available bran
 
 ## Troubleshooting
 
-| Error                     | Meaning           | Resolution                                                                                               |
-| :------------------------ | :---------------- | :------------------------------------------------------------------------------------------------------- |
-| **401 Unauthorized**      | Invalid API Key   | Check your `JULES_API_KEY` environment variable and ensure it's valid.                                   |
-| **403 Forbidden**         | Permission Denied | Ensure your API key has access to the requested resource or repository.                                  |
-| **404 Not Found**         | Resource Missing  | Verify the `sessionId`, `activityId`, or `sourceId` is correct.                                          |
-| **429 Too Many Requests** | Rate Limited      | You've exceeded the API rate limit. Wait a few minutes before retrying.                                  |
-| **500 / 503**             | Jules API Error   | The Jules service is experiencing issues. Try again later or check [Jules Status](https://jules.google). |
-| **ECONNREFUSED**          | Network Error     | Check your internet connection or firewall settings.                                                     |
+| Error / Symptom                                          | Meaning                                                                                          | Resolution                                                                                               |
+| :------------------------------------------------------- | :----------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| `Error: JULES_API_KEY environment variable is required.` | Missing API key                                                                                  | Export `JULES_API_KEY` before starting the server. The process exits immediately without it.             |
+| **401 Unauthorized**                                     | Invalid API Key                                                                                  | Check your `JULES_API_KEY` environment variable and ensure it's valid.                                   |
+| **403 Forbidden**                                        | Permission Denied                                                                                | Ensure your API key has access to the requested resource or repository.                                  |
+| **404 Not Found**                                        | Resource Missing                                                                                 | Verify the `sessionId`, `activityId`, or `sourceId` is correct.                                          |
+| **429 Too Many Requests**                                | Rate Limited                                                                                     | You've exceeded the API rate limit. Wait a few minutes before retrying.                                  |
+| **500 / 503**                                            | Jules API Error                                                                                  | The Jules service is experiencing issues. Try again later or check [Jules Status](https://jules.google). |
+| `Network error - unable to reach Jules API`              | DNS / connectivity                                                                               | Check your internet connection, DNS, or proxy settings.                                                  |
+| `Network error: ...`                                     | Transport failure                                                                                | Usually a timeout (`ECONNABORTED`) or a refused connection. Retry, then check firewall rules.            |
+| `... [truncated]` at the end of output                   | A markdown artifact body exceeded its limit (5,000 chars for a git patch, 2,000 for bash output) | Re-run `jules_get_activity` with `response_format: "json"` for the untruncated payload.                  |
+| `403` from the HTTP transport                            | Origin not allowed                                                                               | Add the client origin to `ALLOWED_ORIGINS`.                                                              |
+| Refuses to bind a non-loopback `HOST`                    | Hardening guardrail                                                                              | Set both `MCP_AUTH_TOKEN` and `ALLOWED_HOSTS` before binding `0.0.0.0`.                                  |
+| Server exits with an invalid `PORT`                      | Bad configuration                                                                                | `PORT` must be an integer between 1 and 65535.                                                           |
+
+Errors are returned to the MCP client as tool errors; the original Jules API
+status code is preserved in the message as `Jules API Error (<status>): ...`.
 
 ## Development
 
@@ -386,7 +525,7 @@ Gets details about a specific connected repository, including all available bran
 # Install dependencies
 npm install
 
-# Build
+# Build (emits dist/ from src/)
 npm run build
 
 # Type-check without emitting files
@@ -398,12 +537,17 @@ npm run lint
 # Check formatting
 npm run format:check
 
-# Run the test suite
+# Run the test suite (Node's built-in test runner)
 npm test
 
 # Development mode (watch)
 npm run dev
 ```
+
+The build compiles TypeScript to `dist/`, which is what the `mcp-jules` bin and
+the npm tarball ship. `dist/` is generated, so edit files under `src/` only. The
+CI workflow runs the format check, lint, type-check and tests on every push and
+pull request.
 
 ## Contributing
 
@@ -472,9 +616,19 @@ then **Settings → Trusted Publisher → GitHub Actions** and enter:
 - Repository: `mcp-jules`
 - Workflow filename: `release.yml` (the filename only, not the full path)
 - Environment name: leave blank
+- Allowed actions: enable direct `npm publish`, not stage-only. The release
+  workflow runs `npm publish`, so a stage-only connection makes the publish job
+  fail.
 
 The identity fields are exact-match, so a wrong repository or workflow filename
-is the usual cause of an `ENEEDAUTH` or `404` failure in the publish job.
+is the usual cause of an `ENEEDAUTH` or `404` failure in the publish job. These
+fields cannot be edited after the connection is created; delete and recreate the
+connection to change them.
+
+While you are there, set **Publishing access** to _Require two-factor
+authentication and disallow bypass 2fa tokens_. Trusted publishers keep working
+under that setting, because CI authenticates with OIDC rather than a long-lived
+token.
 
 ## API Reference
 
