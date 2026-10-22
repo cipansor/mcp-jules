@@ -1,6 +1,6 @@
 {
   "name": "mcp-jules",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "MCP server for the Google Jules AI coding agent API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,8 +12,7 @@
     "dist",
     "README.md",
     "LICENSE",
-    "NOTICE",
-    "CHANGELOG.md"
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc",
